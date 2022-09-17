@@ -18,6 +18,89 @@ enum ParseStrPattern {
     Single(Vec<u8>),
 }
 
+fn check_pre(
+    prev: &mut Option<char>,
+    ch: char,
+    a: &mut String,
+    span: Span,
+    i: &mut String,
+) -> Result<bool> {
+    match (*prev, ch) {
+        (Some('}'), '}') => {
+            a.push('}');
+            *prev = None;
+        }
+        (Some('{'), '}') => {
+            return Err(Error::new(
+                span,
+                r"str-match: invalid format string: expected identity but `}` found
+if you intended to match `{}`, you can escape it using `{{}}`",
+            ));
+        }
+        (Some('{'), '{') => {
+            a.push(ch);
+            *prev = None;
+        }
+        (Some('}'), _) => {
+            return Err(Error::new(
+                span,
+                r"str-match: invalid format string: unmatched `}` found
+if you intended to match `}`, you can escape it using `}}`",
+            ));
+        }
+        (Some('{'), _) => {
+            i.push(ch);
+            return Ok(false);
+        }
+        (_, '}') => {
+            *prev = Some('}');
+        }
+        (_, '{') => {
+            *prev = Some('{');
+        }
+        _ => {
+            a.push(ch);
+        }
+    }
+    Ok(true)
+}
+
+fn check_post(prev: &mut Option<char>, ch: char, b: &mut String, span: Span) -> Result<()> {
+    match (*prev, ch) {
+        (Some('}'), '}') => {
+            b.push('}');
+            *prev = None;
+        }
+        (Some('}'), _) => {
+            return Err(Error::new(
+                span,
+                r"str-match: invalid format string: unmatched `}` found
+if you intended to match `}`, you can escape it using `}}`",
+            ));
+        }
+        (_, '}') => {
+            *prev = Some('}');
+        }
+        (Some('{'), '{') => {
+            b.push(ch);
+            *prev = None;
+        }
+        (Some('{'), _) => {
+            return Err(Error::new(
+                span,
+                "`{}` can only be used once per str pattern",
+            ))
+        }
+        (_, '{') => {
+            *prev = Some('{');
+        }
+        _ => {
+            b.push(ch);
+        }
+    }
+    Ok(())
+}
+
 fn parse_str_pattern(s: &str, span: Span) -> Result<ParseStrPattern> {
     let mut a = String::new();
     let mut i = String::new();
@@ -26,49 +109,10 @@ fn parse_str_pattern(s: &str, span: Span) -> Result<ParseStrPattern> {
     let mut prev = None;
     #[allow(clippy::while_let_on_iterator)]
     while let Some(ch) = chars.next() {
-        match (prev, ch) {
-            (Some('}'), '}') => {
-                a.push('}');
-                prev = None;
-            }
-            (Some('{'), '}') => {
-                return Err(Error::new(
-                    span,
-                    r"str-match: invalid format string: expected identity but `}` found
-if you intended to match `{}`, you can escape it using `{{}}`",
-                ));
-            }
-            (Some('{'), '{') => {
-                a.push(ch);
-                prev = None;
-            }
-            (Some('}'), _) => {
-                return Err(Error::new(
-                    span,
-                    r"str-match: invalid format string: unmatched `}` found
-if you intended to match `}`, you can escape it using `}}`",
-                ));
-            }
-            (Some('{'), _) => {
-                i.push(ch);
-                break;
-            }
-            (_, '}') => {
-                prev = Some('}');
-            }
-            (_, '{') => {
-                prev = Some('{');
-            }
-            _ => {
-                a.push(ch);
-            }
+        if !check_pre(&mut prev, ch, &mut a, span, &mut i)? {
+            break;
         }
     }
-    // format!("}");
-    // format!("{}");
-    // format!("{a}");
-    // format!("{a");
-    // if let [a @ .., b @ ..] = &[0] {}
     Ok(if prev == Some('{') {
         let mut is_terminated = true;
         #[allow(clippy::while_let_on_iterator)]
@@ -88,38 +132,7 @@ if you intended to match `{`, you can escape it using `{{`",
         }
         prev = None;
         for ch in chars {
-            match (prev, ch) {
-                (Some('}'), '}') => {
-                    b.push('}');
-                    prev = None;
-                }
-                (Some('}'), _) => {
-                    return Err(Error::new(
-                        span,
-                        r"str-match: invalid format string: unmatched `}` found
-if you intended to match `}`, you can escape it using `}}`",
-                    ));
-                }
-                (_, '}') => {
-                    prev = Some('}');
-                }
-                (Some('{'), '{') => {
-                    b.push(ch);
-                    prev = None;
-                }
-                (Some('{'), _) => {
-                    return Err(Error::new(
-                        span,
-                        "`{}` can only be used once per str pattern",
-                    ))
-                }
-                (_, '{') => {
-                    prev = Some('{');
-                }
-                _ => {
-                    b.push(ch);
-                }
-            }
+            check_post(&mut prev, ch, &mut b, span)?;
         }
         let i = if i == "_" {
             IdentOrWild::Wild
