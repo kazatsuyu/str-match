@@ -41,3 +41,11 @@ fn f(a: &str) -> &str{
     }
 }
 ```
+
+## Limitations
+
+This macro converts `&str` to `&[u8]` and use match slice pattern.
+For example, `"abc{x}ghi"` pattern is converted to `[b'a', b'b', b'c', x @ .., b'g', b'h', b'i' ]`.
+Because two or more variadic patterns are not allowed in slice pattern, placeholder in str pattern is also only one.
+
+This macro can use single `&str` matching, complex pattern (like `(&str, &str)`) is not supported.

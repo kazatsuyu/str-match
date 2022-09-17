@@ -2,6 +2,17 @@
 name = "str-match"
 version = "0.1.0"
 edition = "2021"
+authors = [
+    "Shirayama Kazatsuyu <shirayama.kazatsuyu@gmail.com>",
+]
+license = "MIT OR APACH-2.0"
+
+description = "Format pattern like str match macro"
+repository = "https://github.com/kazatsuyu/str-match"
+readme = "README.md"
+keywords = ["macro"]
+categories = []
+
 
 [lib]
 proc-macro = true
