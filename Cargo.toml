@@ -5,7 +5,7 @@ edition = "2021"
 authors = [
     "Shirayama Kazatsuyu <shirayama.kazatsuyu@gmail.com>",
 ]
-license = "MIT OR APACH-2.0"
+license = "MIT OR APACHE-2.0"
 
 description = "Format pattern like str match macro"
 repository = "https://github.com/kazatsuyu/str-match"
