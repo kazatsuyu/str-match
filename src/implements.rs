@@ -5,7 +5,7 @@ use quote::{quote, ToTokens};
 use syn::{
     parse::{ParseStream, Parser as _},
     spanned::Spanned,
-    Arm, Error, ExprMatch, Lit, Pat, PatIdent, PatLit, PatOr, Result,
+    Arm, Error, Expr, ExprMatch, Lit, Pat, PatIdent, PatLit, PatOr, Result, Token,
 };
 
 enum IdentOrWild {
@@ -250,6 +250,18 @@ fn str_match_impl(input: ParseStream) -> Result<TokenStream> {
     })
 }
 
+fn str_matches_impl(input: ParseStream) -> Result<TokenStream> {
+    let e = input.parse::<Expr>()?;
+    input.parse::<Token![,]>()?;
+    let pat = Pat::parse_multi(input)?;
+    str_match_impl.parse2(quote! {
+        match #e {
+            #pat => true,
+            _ => false,
+        }
+    })
+}
+
 #[cfg(feature = "attribute")]
 pub(crate) fn str_match_attr(_attrs: TokenStream, tokens: TokenStream) -> TokenStream {
     str_match_impl
@@ -263,6 +275,13 @@ pub(crate) fn str_match_macro(tokens: TokenStream) -> TokenStream {
         .parse2(tokens)
         .unwrap_or_else(|e| Error::to_compile_error(&e))
 }
+
+pub(crate) fn str_matches(tokens: TokenStream) -> TokenStream {
+    str_matches_impl
+        .parse2(tokens)
+        .unwrap_or_else(|e| Error::to_compile_error(&e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

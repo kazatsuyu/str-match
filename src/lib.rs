@@ -13,3 +13,8 @@ pub fn str_match(attrs: TokenStream, tokens: TokenStream) -> TokenStream {
 pub fn str_match(tokens: TokenStream) -> TokenStream {
     implements::str_match_macro(tokens.into()).into()
 }
+
+#[proc_macro]
+pub fn str_matches(tokens: TokenStream) -> TokenStream {
+    implements::str_matches(tokens.into()).into()
+}
