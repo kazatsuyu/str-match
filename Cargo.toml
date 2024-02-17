@@ -31,9 +31,9 @@ name = "macro"
 path = "examples/macro.rs"
 
 [dependencies]
-proc-macro2 = "1.0.43"
-syn = { version = "1.0.99", features = ["full"] }
-quote = "1.0.21"
+proc-macro2 = "1.0.78"
+syn = { version = "2.0.48", features = ["full"] }
+quote = "1.0.35"
 
 [dev-dependencies]
-pretty_assertions = "1.3.0"
+pretty_assertions = "1.4.0"

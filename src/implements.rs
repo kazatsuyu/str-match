@@ -5,7 +5,7 @@ use quote::{quote, ToTokens};
 use syn::{
     parse::{ParseStream, Parser as _},
     spanned::Spanned,
-    Arm, Error, Expr, ExprLit, ExprMatch, Lit, Pat, PatIdent, PatLit, PatOr, Result,
+    Arm, Error, ExprMatch, Lit, Pat, PatIdent, PatLit, PatOr, Result,
 };
 
 enum IdentOrWild {
@@ -147,12 +147,8 @@ if you intended to match `{`, you can escape it using `{{`",
 
 fn convert_pat(pat: &Pat, set: &mut HashSet<Ident>) -> Result<TokenStream> {
     match pat {
-        Pat::Lit(PatLit { attrs, expr }) => {
-            let expr = if let Expr::Lit(ExprLit {
-                attrs,
-                lit: Lit::Str(s),
-            }) = expr.as_ref()
-            {
+        Pat::Lit(PatLit { attrs, lit }) => {
+            let expr = if let Lit::Str(s) = lit {
                 let v = s.value();
                 match parse_str_pattern(&v, s.span())? {
                     ParseStrPattern::Triple(a, IdentOrWild::Ident(i), b) => {
@@ -171,7 +167,7 @@ fn convert_pat(pat: &Pat, set: &mut HashSet<Ident>) -> Result<TokenStream> {
                     },
                 }
             } else {
-                expr.to_token_stream()
+                lit.to_token_stream()
             };
             Ok(quote! {
                 #(#attrs)* #expr
